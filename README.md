@@ -25,7 +25,7 @@ python qiandao.py
 ![image](https://github.com/user-attachments/assets/9b374eba-abd5-4652-ae19-aeae27745085)
 
 # 💖Tips
-> 由于hostloc论坛的防火墙升级，经测试，该脚本每天可正常运行一次，如多次运行，会被hostloc论坛防火墙拦截，请知悉
+> 由于hostloc论坛的防火墙升级，经测试，该脚本每天可正常运行一次，如多次运行，会被hostloc论坛防火墙拦截，请知悉<br>
 > 该脚本可以搭配系统定时任务，自动定时签到
 
 # 更新日志
