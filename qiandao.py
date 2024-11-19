@@ -4,11 +4,14 @@ import random
 import re
 import textwrap
 import requests
-
 from pyaes import AESModeOfOperationCBC
 from requests import Session as req_Session
 
+# 企业微信 webhook URL
+WECHAT_WEBHOOK_URL = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key="
+# 填入企业微信机器人应用的key密钥
 
+# 随机生成用户空间链接
 def randomly_gen_uspace_url() -> list:
     url_list = []
     for i in range(12):
@@ -17,6 +20,8 @@ def randomly_gen_uspace_url() -> list:
         url_list.append(url)
     return url_list
 
+
+# 使用Python实现防CC验证页面中JS写的的toNumbers函数
 def toNumbers(secret: str) -> list:
     text = []
     for value in textwrap.wrap(secret, 2):
@@ -24,6 +29,7 @@ def toNumbers(secret: str) -> list:
     return text
 
 
+# 不带Cookies访问论坛首页，检查是否开启了防CC机制，将开启状态、AES计算所需的参数全部放在一个字典中返回
 def check_anti_cc() -> dict:
     result_dict = {}
     headers = {
@@ -34,31 +40,27 @@ def check_anti_cc() -> dict:
     aes_keys = re.findall('toNumbers\("(.*?)"\)', res.text)
     cookie_name = re.findall('cookie="(.*?)="', res.text)
 
-    if len(aes_keys) != 0:  
-        print("检测到防 CC 机制开启！")
-        if len(aes_keys) != 3 or len(cookie_name) != 1:  
+    if len(aes_keys) != 0:
+        if len(aes_keys) != 3 or len(cookie_name) != 1:
             result_dict["ok"] = 0
-        else:  
+        else:
             result_dict["ok"] = 1
             result_dict["cookie_name"] = cookie_name[0]
             result_dict["a"] = aes_keys[0]
             result_dict["b"] = aes_keys[1]
             result_dict["c"] = aes_keys[2]
-    else:
-        pass
-
     return result_dict
 
 
+# 在开启了防CC机制时使用获取到的数据进行AES解密计算生成一条Cookie（未开启防CC机制时返回空Cookies）
 def gen_anti_cc_cookies() -> dict:
     cookies = {}
     anti_cc_status = check_anti_cc()
 
-    if anti_cc_status:  
+    if anti_cc_status:
         if anti_cc_status["ok"] == 0:
-            print("防 CC 验证过程所需参数不符合要求，页面可能存在错误！")
-        else:  
-            print("自动模拟计尝试通过防 CC 验证")
+            pass
+        else:
             a = bytes(toNumbers(anti_cc_status["a"]))
             b = bytes(toNumbers(anti_cc_status["b"]))
             c = bytes(toNumbers(anti_cc_status["c"]))
@@ -67,12 +69,10 @@ def gen_anti_cc_cookies() -> dict:
 
             name = anti_cc_status["cookie_name"]
             cookies[name] = result.hex()
-    else:
-        pass
-
     return cookies
 
 
+# 登录帐户
 def login(username: str, password: str) -> req_Session:
     headers = {
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36",
@@ -96,6 +96,7 @@ def login(username: str, password: str) -> req_Session:
     return s
 
 
+# 通过抓取用户设置页面的标题检查是否登录成功
 def check_login_status(s: req_Session, number_c: int) -> bool:
     test_url = "https://hostloc.com/home.php?mod=spacecp"
     res = s.get(test_url)
@@ -103,18 +104,16 @@ def check_login_status(s: req_Session, number_c: int) -> bool:
     res.encoding = "utf-8"
     test_title = re.findall("<title>(.*?)<\/title>", res.text)
 
-    if len(test_title) != 0:  
+    if len(test_title) != 0:
         if test_title[0] != "个人资料 -  全球主机交流论坛 -  Powered by Discuz!":
-            print("第", number_c, "个帐户登录失败！")
             return False
         else:
-            print("第", number_c, "个帐户登录成功！")
             return True
     else:
-        print("无法在用户设置页面找到标题，该页面存在错误或被防 CC 机制拦截！")
         return False
 
 
+# 抓取并打印输出帐户当前积分
 def print_current_points(s: req_Session):
     test_url = "https://hostloc.com/forum.php"
     res = s.get(test_url)
@@ -122,32 +121,31 @@ def print_current_points(s: req_Session):
     res.encoding = "utf-8"
     points = re.findall("积分: (\d+)", res.text)
 
-    if len(points) != 0:  
-        print("帐户当前积分：" + points[0])
+    if len(points) != 0:
+        return "帐户当前积分：" + points[0]
     else:
-        print("无法获取帐户积分，可能页面存在错误或者未登录！")
-    time.sleep(5)
+        return "无法获取帐户积分，可能页面存在错误或者未登录！"
 
 
+# 依次访问随机生成的用户空间链接获取积分
 def get_points(s: req_Session, number_c: int):
     if check_login_status(s, number_c):
-        print_current_points(s)  
+        points_log = print_current_points(s)
         url_list = randomly_gen_uspace_url()
         for i in range(len(url_list)):
             url = url_list[i]
             try:
                 res = s.get(url)
                 res.raise_for_status()
-                print("第", i + 1, "个用户空间链接访问成功")
-                time.sleep(5)  
             except Exception as e:
-                print("链接访问异常：" + str(e))
-            continue
-        print_current_points(s)  # 再次打印帐户当前积分
+                continue
+        points_log += "\n" + print_current_points(s)
+        return points_log
     else:
-        print("请检查你的帐户是否正确！")
+        return "请检查你的帐户是否正确！"
 
 
+# 打印输出当前ip地址
 def print_my_ip():
     api_url = "http://ip-api.com/json"
     try:
@@ -156,42 +154,67 @@ def print_my_ip():
         res.encoding = "utf-8"
         ip_info = res.json()
         if ip_info.get("status") == "fail":
-            print("获取当前 ip 地址失败：" + ip_info.get("message", "未知错误"))
+            return "获取当前 ip 地址失败：" + ip_info.get("message", "未知错误")
         else:
-            print("当前使用 ip 地址：" + ip_info.get('query', '无法获取 IP'))
+            return "当前使用 ip 地址：" + ip_info.get('query', '无法获取 IP')
     except Exception as e:
-        print("获取当前 ip 地址失败：" + str(e))
+        return "获取当前 ip 地址失败：" + str(e)
 
 
+# 发送完整日志到企业微信
+def send_log_to_wechat(log_msg: str):
+    payload = {
+        "msgtype": "text",
+        "text": {
+            "content": log_msg
+        }
+    }
+    try:
+        res = requests.post(WECHAT_WEBHOOK_URL, json=payload)
+        res.raise_for_status()
+    except Exception as e:
+        print(f"发送日志到企业微信失败: {str(e)}")
+
+
+# 打印日志并发送到企业微信
+def log_and_send(log_msg: str):
+    print(log_msg)  # 打印日志到控制台
+    send_log_to_wechat(log_msg)  # 发送日志到企业微信
+
+
+# 主程序
 if __name__ == "__main__":
     username = ""
     password = ""
-    # username&password demo
+    # username&password 多账号示例
     # username = "username1,username2,username3,..."
     # password = "password1,password2,password3,..."
-
-
-
     user_list = username.split(",")
     passwd_list = password.split(",")
 
+    log_messages = []
+
     if not username or not password:
-        print("未检测到用户名或密码，请检查环境变量是否设置正确！")
+        log_messages.append("未检测到用户名或密码，请检查环境变量是否设置正确！")
     elif len(user_list) != len(passwd_list):
-        print("用户名与密码个数不匹配，请检查环境变量设置是否错漏！")
+        log_messages.append("用户名与密码个数不匹配，请检查环境变量设置是否错漏！")
     else:
-        print_my_ip()
-        print("共检测到", len(user_list), "个帐户，开始获取积分")
-        print("*" * 30)
+        log_messages.append(print_my_ip())
+        log_messages.append(f"共检测到 {len(user_list)} 个帐户，开始获取积分")
+        log_messages.append("*" * 30)
 
         for i in range(len(user_list)):
             try:
                 s = login(user_list[i], passwd_list[i])
-                get_points(s, i + 1)
-                print("*" * 30)
+                points_log = get_points(s, i + 1)
+                log_messages.append(points_log)
+                log_messages.append("*" * 30)
             except Exception as e:
-                print("程序执行异常：" + str(e))
-                print("*" * 30)
-            continue
+                log_messages.append(f"程序执行异常：{str(e)}")
+                log_messages.append("*" * 30)
 
-        print("程序执行完毕，获取积分过程结束")
+        log_messages.append("程序执行完毕，获取积分过程结束")
+
+    # 发送完整的日志到企业微信
+    full_log = "\n".join(log_messages)
+    log_and_send(full_log)
