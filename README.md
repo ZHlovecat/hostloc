@@ -19,10 +19,17 @@ python qiandao.py
 ```
 # 🥐运行前准备
 ## 1、qiandao.py中填入`username`和`password`
-![image](https://github.com/user-attachments/assets/d65161b0-4e3b-4c19-ba29-2a8cf337a339)
+![image](https://github.com/user-attachments/assets/c137c1e6-cb6c-45d9-abd3-07414a2343fa)
 > 多账户运行，请参考代码中的demo示例
-## 2、运行效果
+## 2、qiandao.py中填入企业微信的`key`
+![image](https://github.com/user-attachments/assets/310e19ab-7c24-44aa-bc19-bb50105dc8b4)
+
+# 💦运行效果
+## 1、脚本运行
 ![image](https://github.com/user-attachments/assets/9b374eba-abd5-4652-ae19-aeae27745085)
+## 2、企业微信通知
+![image](https://github.com/user-attachments/assets/945b7db2-0e4d-4272-b6f4-cb99747e52f4)
+
 
 # 💖Tips
 > 由于hostloc论坛的防火墙升级，经测试，该脚本每天可正常运行一次，如多次运行，会被hostloc论坛防火墙拦截，请知悉<br>
@@ -32,7 +39,7 @@ python qiandao.py
 |版本|更新日志|更新时间|
 |:---:|:---:|:---:|
 |V1.0|1、更新获取当前ip地址源<br> 2、hostloc论坛自动签到 <br> 3、每天账号获取`20`积分|2024-11-18|
-|V1.1|脚本运行完成后日志同步到企业微信进行通知|2024-11-19|
+|V1.1|新增企业微信通知|2024-11-19|
 
 
 
